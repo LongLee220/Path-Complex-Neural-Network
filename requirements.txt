@@ -1,5 +1,5 @@
-torch==1.12.0+cu117  
-dgl-cu117==0.9       
+torch==2.0.1+cu117  
+dgl-cu117==2.1       
 numpy==1.23.1
 networkx==2.8
 rdkit-pypi==2022.3.4 
