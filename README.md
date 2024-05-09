@@ -89,8 +89,6 @@ This table shows how PCNN performs against pretrained GNN architectures. Best pe
 | N-Gram_XGB    | 81.9<sub>(1.9)</sub> | 0.0215<sub>(0.0005)</sub>| 0.00964<sub>(0.00031)</sub>|
 | PretrainGNN   | 113.2<sub>(0.6)</sub>| 0.0200<sub>(0.0001)</sub>| 0.00922<sub>(0.00004)</sub>|
 | GROVER_base   | 94.5<sub>(3.8)</sub> | 0.0218<sub>(0.0004)</sub>| 0.00986<sub>(0.00055)</sub>|
-
-
 | GROVER_large  | 92.0<sub>(0.9)</sub> | 0.0224<sub>(0.0003)</sub>| 0.00986<sub>(0.00025)</sub>|
 | GEM           | 58.9<sub>(0.8)</sub> | **0.0171<sub>(0.0001)</sub>**| 0.00746<sub>(0.00001)</sub>|
 | DMP           | 74.4<sub>(1.2)</sub> |0.0171<sub>(0.0004)</sub>   | - |
