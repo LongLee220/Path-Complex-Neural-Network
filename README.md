@@ -1,5 +1,5 @@
 # Path-Complex-Neural-Network
-path complex neural network for molecular property prediction
+PCNN (Path Complex Neural Network) is a model that utilizes path complexes to represent and predict molecular data. Our findings highlight the potential of path-based approaches in the molecular sciences, providing new insights into the relationships between molecular structure and function.
 
 
 ## Environment Requirements
