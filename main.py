@@ -21,7 +21,7 @@ from logzero import logger
 from torch.utils.data import DataLoader
 from sklearn.metrics import mean_squared_error,mean_absolute_error
 from sklearn.preprocessing import MinMaxScaler
-from models.path_complex import PCNN
+from model.path_complex import PCNN
 from rdkit.Chem import Descriptors
 from torch.optim.lr_scheduler import StepLR
 from splitters import ScaffoldSplitter
