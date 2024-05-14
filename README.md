@@ -1,7 +1,7 @@
 # Path-Complex-Neural-Network
 As a generalization of simplicial complexes, path complexes provide a powerful framework for modeling the connections and interactions within a set, such as the atoms in a molecule. By integrating with molecular mechanics models, path complexes can enhance the accuracy of predictions related to molecular properties.
 
-![PCNN Model](data/processed/graph_to_path.png)  <!-- This path points to the PCNN model image in the data/processed directory -->
+![PCNN Model](data/processed/MD.png)  <!-- This path points to the PCNN model image in the data/processed directory -->
 
 
 PCNN (Path Complex Neural Network) is a model that utilizes path complexes to represent and predict molecular data. Our findings highlight the potential of path-based approaches in the molecular sciences, providing new insights into the relationships between molecular structure and function.
