@@ -568,6 +568,7 @@ def atom_to_graph(smiles,encoder_atom,encoder_bond):
                 edge_features.append(per_bond_feat)
                 
             '''
+            # cutoff <= 5
             for i in range(len(coor)):
                 coor_i =  np.array(coor[i])
                 
