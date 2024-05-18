@@ -24,12 +24,12 @@ from sklearn.preprocessing import MinMaxScaler
 from model.path_complex import PCNN
 from rdkit.Chem import Descriptors
 from torch.optim.lr_scheduler import StepLR
-from splitters import ScaffoldSplitter
+from utils.splitters import ScaffoldSplitter
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from tree_graph import tree_complex
+from utils.mol_to_path import tree_complex
 
 
 def set_seed(seed):
