@@ -639,7 +639,7 @@ def normalize_columns_01(input_tensor):
 
 
 
-def create_linear_graph(g,encode_two_path):
+def create_bond_angle(g,encode_two_path):
     # Create an undirected NetworkX graph from the DGL grap
     edge_feats = g.edata['feat']
     coor_feats = g.ndata['coor']
@@ -704,7 +704,7 @@ def create_linear_graph(g,encode_two_path):
 
 
 
-def create_face_graph(g, lg, encode_tree_path):
+def create_dihedral_angle(g, lg, encode_tree_path):
     # Create an undirected NetworkX graph from the DGL grap
     edge_feats = lg.edata['feat']
     coor_feats = g.ndata['coor']
@@ -803,9 +803,9 @@ def path_complex_mol(Smile, encoder_atom,encoder_bond,encode_two_path,encode_tre
     # 创建一个空的DGL图
     g = atom_to_graph(Smile,encoder_atom,encoder_bond)
     if g != False:
-        lg = create_linear_graph(g,encode_two_path)
+        lg = create_bond_angle(g,encode_two_path)
         if lg != False:
-            #fg = create_face_graph(g,lg,encode_tree_path)
+            #fg = create_dihedral_angle(g,lg,encode_tree_path)
             u, v = torch.tensor([0, 0, 0, 1]), torch.tensor([1, 2, 3, 3])
             fg = dgl.graph((u, v))
 
