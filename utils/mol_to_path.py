@@ -566,7 +566,8 @@ def atom_to_graph(smiles,encoder_atom,encoder_bond):
                     
                 edge_features.append(per_bond_feat)
                 edge_features.append(per_bond_feat)
-
+                
+            '''
             for i in range(len(coor)):
                 coor_i =  np.array(coor[i])
                 
@@ -587,7 +588,7 @@ def atom_to_graph(smiles,encoder_atom,encoder_bond):
                             edge_features.append(per_bond_feat)
                             edge_features.append(per_bond_feat)
 
-
+            '''
             
             coor_tensor = torch.tensor(coor, dtype=torch.float32)
             edge_feats = torch.tensor(edge_features, dtype=torch.float32)
