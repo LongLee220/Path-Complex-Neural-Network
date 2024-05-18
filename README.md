@@ -13,7 +13,7 @@ The Path Complex Message-passing Architecture:
 ![PCNN Architecture](data/processed/Message_Passing.png)  
 
 The Path Complex Neural Network Module:
-![PCNN Module](data/processed/PCNN.pdf) 
+![PCNN Module](data/processed/PCNN.png) 
 
 
 
