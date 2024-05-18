@@ -29,7 +29,7 @@ from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from rdkit import Chem
 from rdkit.Chem import AllChem
-from utils.mol_to_path import tree_complex
+from utils.mol_to_path import path_complex_mol
 
 
 def set_seed(seed):
@@ -283,7 +283,7 @@ def creat_data(datafile, encoder_atom,encoder_bond,encode_two_path,encode_tree_p
             #if has_isolated_hydrogens(smiles) == False and conformers_is_zero(smiles) == True:
             #if conformers_is_zero(smiles) == True:
 
-            Graph_list = tree_complex(smiles, encoder_atom,encoder_bond,encode_two_path,encode_tree_path)
+            Graph_list = path_complex_mol(smiles, encoder_atom,encoder_bond,encode_two_path,encode_tree_path)
 
 
             if i % 10000 == 0:
