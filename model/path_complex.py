@@ -22,7 +22,7 @@ from dgl.nn import GlobalAttentionPooling, SortPooling
 from dgl.utils import expand_as_pair 
 from dgl.nn.functional import edge_softmax
 from dgl import DGLError
-from models.activations import swish
+
 
 
 
