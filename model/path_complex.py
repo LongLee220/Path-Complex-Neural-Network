@@ -35,7 +35,13 @@ if torch.cuda.is_available():
 
 
 
-
+def swish(x):
+    """
+    Swish activation function,
+    from Ramachandran, Zopf, Le 2017. "Searching for Activation Functions"
+    """
+    return x * torch.sigmoid(x)
+    
 
 def pool_subgraphs_node(out, batched_graph):
     # 将整图的输出按照子图数量拆分成子图的输出
