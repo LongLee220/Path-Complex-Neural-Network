@@ -646,91 +646,70 @@ if __name__ == '__main__':
     num_heads = args.head
     num_layers = args.layer_number
     tras_med = args.tras_med
-    if datafile in ['tox21']:
-        Random_seed = [2, 44, 46, 0, 42]
-        seed = 42
-    elif datafile in ['hiv']:
-        Random_seed = [0, 1, 2, 43, 42]
-        seed = 42
+    
+    seed = 42
+    set_seed(seed)
+    
+        
+    AUC_list = []
+    
+    if model_select == 'pcnn':
+        model = PCNN(in_feats=10, hidden_size = 32, out_feats=64, encode_dim=encode_dim, out_dim = target_dim,tras_med = tras_med,num_blcok=num_blcok,num_heads=num_heads,num_layers=num_layers)
 
     else:
-        Random_seed = [1,2,3,42,0]#0
-        seed = 42
-    set_seed(seed)
-    print(seed)
-    All_AUC = []
-    for i in range(iter):
-        # 设置种子
-        #seed = Random_seed[i]
+        print('No found model!!!')
+    
+    
+    total_params = sum(p.numel() for p in model.parameters())
+    print(f"Total parameters: {total_params}")
+
+    train_loss_dic = {}
+    vali_loss_dic = {}
+
+    #model = modeling().to(device)
+    model = model.to(device)
+    if loss_sclect == 'l1':
+        #loss_fn = nn.L1Loss()
+        loss_fn = nn.L1Loss(reduction='sum')#sum，mean,none
+
+    if loss_sclect == 'l2':
+        loss_fn = nn.MSELoss(reduction='none')
+
+    if loss_sclect == 'sml1':
+        loss_fn = nn.SmoothL1Loss(reduction='sum')#mean,none,sum
+
+    if loss_sclect == 'bce':
+        loss_fn = nn.BCELoss(reduction='mean')#mean
+    
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=LR)
+    scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
+    best_auc = 0
+    for epoch in range(NUM_EPOCHS):
+        train_loss,vali_loss = train(model, device, loaded_train_loader, loaded_valid_loader, optimizer, epoch + 1)
+
         
-        AUC_list = []
+        AUC = predicting(model, device, loaded_test_loader)
         
-        if model_select == 'pcnn':
-            model = PCNN(in_feats=10, hidden_size = 32, out_feats=64, encode_dim=encode_dim, out_dim = target_dim,tras_med = tras_med,num_blcok=num_blcok,num_heads=num_heads,num_layers=num_layers)
-
-        else:
-            print('No found model!!!')
         
-        #print(model)
-        # 统计模型的总参数数量
-        total_params = sum(p.numel() for p in model.parameters())
-        print(f"Total parameters: {total_params}")
+        if AUC > best_auc:
+            best_auc = AUC
+            logger.info(f'AUC: {best_auc:.5f}')
+            formatted_number = "{:.5f}".format(best_auc)
+            best_auc = float(formatted_number)
+            AUC_list.append(best_auc)
 
-        train_loss_dic = {}
-        vali_loss_dic = {}
+            print(f"Epoch [{epoch+1}], Learning Rate: {scheduler.get_last_lr()}")
 
-        #model = modeling().to(device)
-        model = model.to(device)
-        if loss_sclect == 'l1':
-            #loss_fn = nn.L1Loss()
-            loss_fn = nn.L1Loss(reduction='sum')#sum，mean,none
-
-        if loss_sclect == 'l2':
-            loss_fn = nn.MSELoss(reduction='none')
-
-        if loss_sclect == 'sml1':
-            loss_fn = nn.SmoothL1Loss(reduction='sum')#mean,none,sum
-
-        if loss_sclect == 'bce':
-            loss_fn = nn.BCELoss(reduction='mean')#mean
+        if epoch % 10 == 0:
+            #MAE_list.append(best_MAE)
+            print("-------------------------------------------------------")
+            print("epoch:",epoch)
+            print('best_MAE:', best_auc)
         
-
-        optimizer = torch.optim.Adam(model.parameters(), lr=LR)
-        scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
-        best_auc = 0
-        for epoch in range(NUM_EPOCHS):
-            train_loss,vali_loss = train(model, device, loaded_train_loader, loaded_valid_loader, optimizer, epoch + 1)
-
-            
-            AUC = predicting(model, device, loaded_test_loader)
-            
-            
-            if AUC > best_auc:
-                best_auc = AUC
-                logger.info(f'AUC: {best_auc:.5f}')
-                formatted_number = "{:.5f}".format(best_auc)
-                best_auc = float(formatted_number)
-                AUC_list.append(best_auc)
-
-                print(f"Epoch [{epoch+1}], Learning Rate: {scheduler.get_last_lr()}")
-
-            if epoch % 10 == 0:
-                #MAE_list.append(best_MAE)
-                print("-------------------------------------------------------")
-                print("epoch:",epoch)
-                print('best_MAE:', best_auc)
-            
-            if epoch == NUM_EPOCHS-1:
-                print(f"the best result up to {i+1}-loop is {best_auc:.4f}.")
-                formatted_number = "{:.5f}".format(best_auc)
-                All_AUC.append(best_auc)
+        if epoch == NUM_EPOCHS-1:
+            print(f"the best result up to {i+1}-loop is {best_auc:.4f}.")
+            formatted_number = "{:.5f}".format(best_auc)
+            All_AUC.append(best_auc)
     torch.save(model.state_dict(), 'model.pth')
     
-    # 计算均值
-    mean_value = statistics.mean(All_AUC)
-    # 计算标准差
-    std_dev = statistics.stdev(All_AUC)
-    # 打印结果
-    print(seed)
-    print("均值:", mean_value)
-    print("标准差:", std_dev)
