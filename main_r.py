@@ -3,7 +3,6 @@
 """
 Created on Sat Jan 20 15:08:37 2024
 
-@author: longlee
 """
 
 import torch.nn as nn
