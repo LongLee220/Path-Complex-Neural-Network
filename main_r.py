@@ -625,17 +625,17 @@ def predicting(model, device,target, data_loader, min_val, max_val,resent,poolin
 def parse_arguments():
     parser = argparse.ArgumentParser(description="示例命令行工具")
 
-    # 添加命令行参数
+    
     parser.add_argument("--config", type=str, help="配置文件路径")
 
     args = parser.parse_args()
     args.config = './config/r_path.yaml'
-    # 如果提供了配置文件路径，则加载配置文件
+    
     if args.config:
         with open(args.config, "r") as config_file:
             config = yaml.safe_load(config_file)
 
-        # 将配置文件中的参数添加到命令行参数中
+        
         for key, value in config.items():
             setattr(args, key, value)
 
@@ -753,70 +753,60 @@ if __name__ == '__main__':
     ALl_MAE = []
 
     
-    for i in range(iter):
-        if model_select == 'pcnn':
-            model = PCNN(in_feats=10, hidden_size = 32, out_feats=64, encode_dim=encode_dim, out_dim = out_dim,tras_med = tras_med,num_blcok=num_blcok,num_heads=num_heads,num_layers=num_layers)
 
-        else:
-            print('No found model!!!')
+    if model_select == 'pcnn':
+        model = PCNN(in_feats=10, hidden_size = 32, out_feats=64, encode_dim=encode_dim, out_dim = out_dim,tras_med = tras_med,num_blcok=num_blcok,num_heads=num_heads,num_layers=num_layers)
 
-        #print(model)
-        # 统计模型的总参数数量
-        total_params = sum(p.numel() for p in model.parameters())
-        print(f"Total parameters: {total_params}")
-        
-        MAE_list = []
-        train_loss_dic = {}
-        vali_loss_dic = {}
+    else:
+        print('No found model!!!')
 
-        #model = nn.DataParallel(model)
-        #model.to('cuda')
-        model = model.to(device)
-        if loss_sclect == 'l1':
-            #loss_fn = nn.L1Loss(reduction='none')
-            loss_fn = nn.L1Loss(reduction='sum')#sum,mean,none
-            
-        if loss_sclect == 'l2':
-            loss_fn = nn.MSELoss(reduction='sum')
-
-        if loss_sclect == 'sml1':
-            loss_fn = nn.SmoothL1Loss(reduction='sum')#mean,none,sum
-
-        optimizer = torch.optim.Adam(model.parameters(), lr=LR)
-
-        scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
-
-        best_MAE = 1000
-        for epoch in range(NUM_EPOCHS):
-            train_loss,vali_loss = train(model, device, target, loaded_train_loader, loaded_valid_loader,optimizer, epoch + 1, resent, pooling, datafile)
-
-
-            MAE = predicting(model, device, target, loaded_test_loader, min_val, max_val,resent, pooling,datafile, out_dim)
-            
-            
-            if MAE < best_MAE:
-                logger.info(f'MAE: {MAE:.5f}')
-                formatted_number = "{:.5f}".format(MAE)
-                best_MAE = float(formatted_number)
-                MAE_list.append(best_MAE)
-                print(f"Epoch [{epoch+1}], Learning Rate: {scheduler.get_last_lr()}")
-
-            if epoch % 10 == 0:
-                print("-------------------------------------------------------")
-                print("epoch:",epoch)
-                print('best_MAE:', best_MAE)
-            
-            if epoch == NUM_EPOCHS-1:
-                #MAE_list.append(best_MAE)
-                min_mae = min(MAE_list) 
-                print(f"The best min mae score up to {i+1}-loop is :",min_mae)
-                ALl_MAE.append(min_mae)
+    #print(model)
+    total_params = sum(p.numel() for p in model.parameters())
+    print(f"Total parameters: {total_params}")
     
-    # 计算均值
-    mean_value = statistics.mean(ALl_MAE)
-    # 计算标准差
-    std_dev = statistics.stdev(ALl_MAE)
+    MAE_list = []
+    train_loss_dic = {}
+    vali_loss_dic = {}
 
-    # 打印结果
-    print("均值:", mean_value)
-    print("标准差:", std_dev)
+    #model = nn.DataParallel(model)
+    #model.to('cuda')
+    model = model.to(device)
+    if loss_sclect == 'l1':
+        #loss_fn = nn.L1Loss(reduction='none')
+        loss_fn = nn.L1Loss(reduction='sum')#sum,mean,none
+        
+    if loss_sclect == 'l2':
+        loss_fn = nn.MSELoss(reduction='sum')
+
+    if loss_sclect == 'sml1':
+        loss_fn = nn.SmoothL1Loss(reduction='sum')#mean,none,sum
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=LR)
+
+    scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
+
+    best_MAE = 1000
+    for epoch in range(NUM_EPOCHS):
+        train_loss,vali_loss = train(model, device, target, loaded_train_loader, loaded_valid_loader,optimizer, epoch + 1, resent, pooling, datafile)
+
+
+        MAE = predicting(model, device, target, loaded_test_loader, min_val, max_val,resent, pooling,datafile, out_dim)
+        
+        
+        if MAE < best_MAE:
+            logger.info(f'MAE: {MAE:.5f}')
+            formatted_number = "{:.5f}".format(MAE)
+            best_MAE = float(formatted_number)
+            MAE_list.append(best_MAE)
+            print(f"Epoch [{epoch+1}], Learning Rate: {scheduler.get_last_lr()}")
+
+        if epoch % 10 == 0:
+            print("-------------------------------------------------------")
+            print("epoch:",epoch)
+            print('best_MAE:', best_MAE)
+        
+        if epoch == NUM_EPOCHS-1:
+            #MAE_list.append(best_MAE)
+            min_mae = min(MAE_list) 
+            print(f"The best min mae score up to {i+1}-loop is :",min_mae)
+            ALl_MAE.append(min_mae)
