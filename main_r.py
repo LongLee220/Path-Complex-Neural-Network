@@ -712,18 +712,14 @@ if __name__ == '__main__':
         target = [0]
 
     out_dim = len(target)
-    #out_dim = 1
-    # 加载 DataLoader 使用的数据集和其他必要信息
+    
     state = torch.load('data/processed/'+datafile+'.pth')
 
-    # 重新创建 CustomDataset 和 DataLoader
+   
     loaded_train_dataset = CustomDataset(state['train_label'],state['train_graph_feat'], state['train_graph_list'])
     loaded_valid_dataset = CustomDataset(state['valid_label'],state['valid_graph_feat'], state['valid_graph_list'])
     loaded_test_dataset = CustomDataset(state['test_label'], state['test_graph_feat'],state['test_graph_list'])
-    
-    print("length of training set:",len(loaded_train_dataset))
-    print("length of validation set:",len(loaded_valid_dataset))
-    print("length of testing set:",len(loaded_test_dataset))
+
 
     loaded_train_loader = DataLoader(loaded_train_dataset, batch_size=batch_size, shuffle=state['shuffle'],num_workers=4, pin_memory=True, drop_last=True, collate_fn=collate_fn)
     if vali_ratio == 0.0:
