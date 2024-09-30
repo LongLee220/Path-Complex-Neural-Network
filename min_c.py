@@ -630,9 +630,6 @@ if __name__ == '__main__':
 
     print('dataset was loaded!')
 
-    print("length of training set:",len(loaded_train_dataset))
-    print("length of validation set:",len(loaded_valid_dataset))
-    print("length of testing set:",len(loaded_test_dataset))
     
     iter = args.iter
     LR = args.LR
