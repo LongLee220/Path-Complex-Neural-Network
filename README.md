@@ -55,7 +55,7 @@ nvcc --version
 ## Data Download and Configuration
 
 ### Download Data
-Download the QM7, QM8, and QM9 datasets from [MoleculeNet](https://moleculenet.org/datasets-1). Place the datasets into the `data` directory in your project folder.
+Download the datasets from [MoleculeNet](https://moleculenet.org/datasets-1). Place the datasets into the `data` directory in your project folder.
 
 ### Configure Dataset Usage
 To use different datasets, modify the `path.yaml` file in the `config` directory:
