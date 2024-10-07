@@ -106,17 +106,17 @@ class Path_Complex_LIH_layer(nn.Module):
         if self.bias_lg is not None:
             nn.init.constant_(self.bias_lg, 0)
 
-    # 定义消息传递函数，将边的特征发送给相应的源节点和目标节点
+   
     def message_func(self, edges):
         return {'feat': edges.data['feat']}
 
 
     def reduce_func(self, nodes):
-        num_edges = nodes.mailbox['feat'].size(1)  # 消息数量
+        num_edges = nodes.mailbox['feat'].size(1)  
         if num_edges > 0:
-            agg_feats = torch.sum(nodes.mailbox['feat'], dim=1) / num_edges  # 求平均
+
         else:
-            agg_feats = torch.zeros((nodes.data['feat'].size(0), nodes.data['feat'].size(1)))  # 对于孤立点，使用零向量
+            agg_feats = torch.zeros((nodes.data['feat'].size(0), nodes.data['feat'].size(1))) 
         return {'agg_feats': agg_feats}
       
 
@@ -130,7 +130,7 @@ class Path_Complex_LIH_layer(nn.Module):
             #l_graph.edata['feat'] = x_feats
 
             in_degrees = graph.in_degrees().float().unsqueeze(-1)
-            in_degrees[in_degrees == 0] = 1  # 将入度为0的节点设置为1，以避免除零错误
+            in_degrees[in_degrees == 0] = 1  
             lg_f_ni = self.lg_fc_ni(m_feats)
             lg_f_nj = self.lg_fc_nj(m_feats)
             lg_f_fij = self.lg_fc_fij(x_feats)
@@ -148,7 +148,7 @@ class Path_Complex_LIH_layer(nn.Module):
             lg_e = (x_feats * self.lg_attn).sum(dim=-1).unsqueeze(-1)
             l_graph.edata['a'] = edge_softmax(l_graph, lg_e)
 
-            # 发送消息并接收消息，将边的特征分配给边的两个端点
+            
             l_graph.send_and_recv(l_graph.edges(), self.message_func, reduce_func=self.reduce_func)
             m_feats_1 = torch.cat((l_graph.ndata['feat'],l_graph.ndata['agg_feats']),dim=1)
 
@@ -291,47 +291,6 @@ class Path_Complex_IH_layer(nn.Module):
 
 
 
-'''     
-
-class HL_LH_block_1(nn.Module):
-    def __init__(self, in_feats, hidden_size, out_feats, encode_dim, num_heads, num_layers):
-        super(HL_LH_block_1, self).__init__()
-        atom_f, bond_f, angle_f, dihedral_f = encode_dim
-
-        # Define layers using the updated create_layers method
-        self.block_0_s = self.create_layers(Path_Complex_layer, bond_f, angle_f, dihedral_f, bond_f, angle_f, dihedral_f,num_heads, num_layers=num_layers-1)
-
-        self.block_1_s = self.create_layers(Path_Complex_layer, atom_f, bond_f, angle_f, atom_f, bond_f, angle_f, num_heads,num_layers=num_layers-1)
-
-        self.block_2_s = self.create_layers(EGATlayer, atom_f, bond_f, atom_f, bond_f,num_heads, num_layers=num_layers)
-
-        self.block_3_s = self.create_layers(Path_Complex_layer, atom_f, bond_f, angle_f, atom_f, bond_f, angle_f, num_heads,num_layers=num_layers-1)
-
-        self.block_4_s = self.create_layers(Path_Complex_layer, bond_f, angle_f, dihedral_f, bond_f, angle_f, dihedral_f, num_heads,num_layers=num_layers-1)
-
-    def create_layers(self, layer_class, *args, num_layers):
-        return nn.ModuleList([layer_class(*args, ) for _ in range(num_layers)])
-
-    def apply_layers(self, layers, *inputs):
-        for layer in layers:
-            inputs = layer(*inputs)
-        return inputs
-
-    def forward(self, g, lg, fg, device, g_node_feat, g_edge_feat, lg_node_feat, lg_edge_feat, fg_node_feat, fg_edge_feat):
-        x_feat = fg_node_feat
-        m_feat = lg_node_feat
-        l_feat = g_node_feat
-
-        x_feat = self.apply_layers(self.block_0_s, lg, fg, lg_node_feat, fg_node_feat, fg_edge_feat, x_feat)
-        m_feat = self.apply_layers(self.block_1_s, g, lg, g_node_feat, lg_node_feat, x_feat)
-        l_feat, g_edge_feat = self.apply_layers(self.block_2_s, g, l_feat, g_edge_feat)
-        m_feat = self.apply_layers(self.block_3_s, g, lg, g_node_feat, m_feat, lg_edge_feat)
-        x_feat = self.apply_layers(self.block_4_s, lg, fg, lg_node_feat, x_feat, fg_edge_feat)
-
-        return F.leaky_relu(g_node_feat + l_feat), F.leaky_relu(lg_node_feat + m_feat), F.leaky_relu(fg_node_feat + x_feat)
-
-
-'''
 class HL_LH_block_1(nn.Module):
     def __init__(self, in_feats, hidden_size, out_feats, encode_dim, num_heads,num_layers):
         super(HL_LH_block_1, self).__init__()
@@ -433,150 +392,6 @@ class HL_LH_block_1(nn.Module):
         
 
 
-        '''
-        ### updata 0,1
-        if len(self.block_2_s) > 0:
-            for i in range(len(self.block_2_s)):
-                layer = self.block_2_s[i]
-                if i == 0:
-                    l_feat, g_edge_feat = layer(g, g_node_feat, g_edge_feat)
-                if i == 1:
-                    l_feat, g_edge_feat = layer(g, l_feat, g_edge_feat)
-            l_feat = torch.add(g_node_feat, l_feat)
-
-        l_feat = nn.functional.leaky_relu(torch.add(g_node_feat, l_feat))
-
-        
-        return l_feat, lg_node_feat, fg_node_feat
-        '''
-
-
-        '''
-        ### 0,1,2
-        if len(self.block_1_s) > 0:
-            for layer in self.block_1_s:
-                m_feat = layer(g, lg, g_node_feat,lg_node_feat, fg_node_feat)
-            m_feat = torch.add(lg_node_feat, m_feat)
-
-        
-        if len(self.block_2_s) > 0:
-            for i in range(len(self.block_2_s)):
-                layer = self.block_2_s[i]
-                if i == 0:
-                    l_feat, g_edge_feat = layer(g, g_node_feat, m_feat)
-                if i == 1:
-                    l_feat, g_edge_feat = layer(g, l_feat, g_edge_feat)
-            l_feat = torch.add(g_node_feat, l_feat)
-
-        l_feat = nn.functional.leaky_relu(torch.add(g_node_feat, l_feat))
-
-        if len(self.block_3_s) > 0:
-            for layer in self.block_3_s:
-                m_feat = layer(g, lg, g_node_feat, m_feat, lg_edge_feat)
-            m_feat = torch.add(lg_node_feat, m_feat)
-        m_feat = nn.functional.leaky_relu(torch.add(lg_node_feat, m_feat))
-        
-        return l_feat, m_feat, fg_node_feat
-        '''
-    
-        '''
-        ###并行
-        if len(self.block_0_s) > 0:
-            for layer in self.block_0_s:
-                x_feat = layer(lg, fg, lg_node_feat,fg_node_feat,fg_edge_feat)
-            x_feat = torch.add(fg_node_feat, x_feat)
-
-
-        # from H information to L information
-        if len(self.block_1_s) > 0:
-            for layer in self.block_1_s:
-                m_feat = layer(g, lg, g_node_feat,lg_node_feat, fg_node_feat)
-            m_feat = torch.add(lg_node_feat, m_feat)
-
-        
-        if len(self.block_2_s) > 0:
-            for i in range(len(self.block_2_s)):
-                layer = self.block_2_s[i]
-                if i == 0:
-                    l_feat, g_edge_feat = layer(g, g_node_feat, lg_node_feat)
-                if i == 1:
-                    l_feat, g_edge_feat = layer(g, l_feat, g_edge_feat)
-            l_feat = torch.add(g_node_feat, l_feat)
-
-
-        l_feat = nn.functional.leaky_relu(torch.add(g_node_feat, l_feat))
-
-        if len(self.block_3_s) > 0:
-            for layer in self.block_3_s:
-                m_feat = layer(g, lg, g_node_feat, m_feat, lg_edge_feat)
-            m_feat = torch.add(lg_node_feat, m_feat)
-        m_feat = nn.functional.leaky_relu(torch.add(lg_node_feat, m_feat))
-        
-        if len(self.block_4_s) > 0:
-            for layer in self.block_4_s:
-                x_feat = layer(lg, fg, lg_node_feat, x_feat, fg_edge_feat)
-
-        x_feat = nn.functional.leaky_relu(torch.add(fg_node_feat, x_feat))
-        return l_feat, m_feat, x_feat
-        '''
-        
-        '''
-        # from H information to L information
-        if len(self.block_0_s) > 0:
-            for layer in self.block_0_s:
-                x_feat = layer(lg, fg, lg_node_feat,fg_node_feat,fg_edge_feat)
-            x_feat = torch.add(fg_node_feat, x_feat)
-
-        if len(self.block_1_s) > 0:
-            for layer in self.block_1_s:
-                m_feat = layer(g, lg, g_node_feat,lg_node_feat, x_feat)
-            m_feat = torch.add(lg_node_feat, m_feat)
-
-        
-        if len(self.block_2_s) > 0:
-            for i in range(len(self.block_2_s)):
-                layer = self.block_2_s[i]
-                if i == 0:
-                    l_feat, g_edge_feat = layer(g, g_node_feat, m_feat)
-                if i == 1:
-                    l_feat, g_edge_feat = layer(g, l_feat, g_edge_feat)
-            l_feat = torch.add(g_node_feat, l_feat)
-
-        l_feat = nn.functional.leaky_relu(torch.add(g_node_feat, l_feat))
-
-        return l_feat, m_feat, x_feat
-        '''
-
-        
-        '''
-        # from L information to H information
-        if len(self.block_2_s) > 0:
-            for i in range(len(self.block_2_s)):
-                layer = self.block_2_s[i]
-                if i == 0:
-                    l_feat, g_edge_feat = layer(g, g_node_feat, lg_node_feat)
-                if i == 1:
-                    l_feat, g_edge_feat = layer(g, l_feat, g_edge_feat)
-            l_feat = torch.add(g_node_feat, l_feat)
-
-        l_feat = nn.functional.leaky_relu(torch.add(g_node_feat, l_feat))
-
-        if len(self.block_3_s) > 0:
-            for layer in self.block_3_s:
-                m_feat = layer(g, lg, l_feat, lg_node_feat, lg_edge_feat)
-            m_feat = torch.add(lg_node_feat, m_feat)
-        m_feat = nn.functional.leaky_relu(torch.add(lg_node_feat, m_feat))
-        
-        if len(self.block_4_s) > 0:
-            for layer in self.block_4_s:
-                x_feat = layer(lg, fg, m_feat, fg_node_feat, fg_edge_feat)
-            #x_feat = torch.add(fg_node_feat, x_feat)
-
-        x_feat = nn.functional.leaky_relu(torch.add(fg_node_feat, x_feat))
-
-        return l_feat, m_feat, x_feat
-        '''
-        
 
 
 
