@@ -33,7 +33,7 @@ from model.path_complex import PCNN
 from torch.optim.lr_scheduler import StepLR
 from ruamel.yaml import YAML
 from utils.splitters import ScaffoldSplitter
-from utils.path_class import path_complex_mol
+from utils.mol_to_path import path_complex_mol
 from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from rdkit import Chem
