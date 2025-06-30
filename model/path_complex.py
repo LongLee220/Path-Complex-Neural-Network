@@ -114,6 +114,7 @@ class Path_Complex_LIH_layer(nn.Module):
     def reduce_func(self, nodes):
         num_edges = nodes.mailbox['feat'].size(1)  
         if num_edges > 0:
+            agg_feats = torch.sum(nodes.mailbox['feat'], dim=1) / num_edges
 
         else:
             agg_feats = torch.zeros((nodes.data['feat'].size(0), nodes.data['feat'].size(1))) 
