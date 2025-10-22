@@ -1,6 +1,6 @@
 # Path Complex Neural Network (PCNN)
 
-This repository contains the **official implementation** of our paper  
+This repository contains the official implementation of our paper  
 [*Path Complex Neural Network for Molecular Property Prediction*](https://openreview.net/forum?id=FlnGcMp6FL),  
 presented at the ICML 2024 Workshop on Geometry-grounded Representation Learning and Generative Modeling.
 
