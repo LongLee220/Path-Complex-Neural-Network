@@ -20,7 +20,7 @@ import torch.distributed as dist
 
 
 
-
+from contextlib import nullcontext
 from logzero import logger
 from torch.utils.data import DataLoader
 from sklearn.metrics import mean_squared_error,mean_absolute_error
@@ -33,21 +33,10 @@ from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 from rdkit import Chem
 from rdkit.Chem import AllChem
-#from utils.path import path_complex_mol #previous
-from utils.path_class import path_complex_mol
-from torch.utils.data import DataLoader, DistributedSampler
-from torch.nn.parallel import DistributedDataParallel as DDP
+from utils.mol_to_path import path_complex_mol
 
-'''
-def set_seed(seed):
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-    np.random.seed(seed)
-    random.seed(seed)
-'''
-# 设置种子
+
+
 def set_seed(seed):
     torch.manual_seed(seed)
     if torch.cuda.is_available():
@@ -57,7 +46,7 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-set_seed(42)  # 使用一个具体的种子值
+
 
 
 
@@ -106,9 +95,7 @@ def collate_fn(batch):
 def mul_min_max_normalize(data):
 
     scaler = MinMaxScaler()
-    # 找到最小值和最大值
-    
-    # 对每个数据点应用Min-Max归一化公式
+
     normalized_data = pd.DataFrame(scaler.fit_transform(data), columns=data.columns)
     
     min_val = scaler.data_min_
@@ -120,11 +107,10 @@ def mul_min_max_normalize(data):
 
 
 def sig_min_max_normalize(data):
-    # 找到最小值和最大值
+
     min_val = min(data)
     max_val = max(data)
 
-    # 对每个数据点应用Min-Max归一化公式
     normalized_data = [(x - min_val) / (max_val - min_val) for x in data]
 
     return normalized_data, min_val, max_val
@@ -143,7 +129,7 @@ def mul_map(target,x,min_values,scale_values):
 
 
 def inverse_min_max_normalize(x, min_val, max_val):
-    # 对每个归一化后的数据点应用逆操作
+
     original_data = x * (max_val - min_val)
     return original_data
 
@@ -180,49 +166,6 @@ def get_data_task_names():
 
 
 
-def global_feats(smiles):
-    mol = Chem.MolFromSmiles(smiles)
-
-    global_feat = []
-
-    # 计算分子的质量
-    mol_mass = Descriptors.ExactMolWt(mol)
-    global_feat.extend([mol_mass])
-
-    # 计算分子的表面积
-    mol_area = Descriptors.TPSA(mol)
-    global_feat.extend([mol_area])
-
-    mol_with_hydrogens = Chem.AddHs(mol)
-    AllChem.EmbedMolecule(mol_with_hydrogens)
-    volume = AllChem.ComputeMolVolume(mol_with_hydrogens)
-
-    global_feat.extend([volume])
-
-
-    # 计算分子的极性度
-    mol_polarity = Descriptors.MolLogP(mol)
-    global_feat.extend([mol_polarity])
-
-    # 计算分子中不同类型的键的数量
-    bond_feat = [0]*4
-    num_bonds = mol.GetNumBonds()
-    if num_bonds != 0:
-        num_single_bonds = sum(bond.GetBondType() == Chem.BondType.SINGLE for bond in mol.GetBonds())
-        bond_feat[0] = num_single_bonds/num_bonds
-        num_double_bonds = sum(bond.GetBondType() == Chem.BondType.DOUBLE for bond in mol.GetBonds())
-        bond_feat[1] = num_double_bonds/num_bonds
-        num_triple_bonds = sum(bond.GetBondType() == Chem.BondType.TRIPLE for bond in mol.GetBonds())
-        bond_feat[2] = num_triple_bonds/num_bonds
-        num_aromtic_bonds = sum(bond.GetBondType() == Chem.BondType.AROMATIC for bond in mol.GetBonds())
-        bond_feat[3] = num_aromtic_bonds/num_bonds
-
-    global_feat.extend(bond_feat)
-
-    return torch.tensor(global_feat)
-
-
-
 
 
 
@@ -234,22 +177,19 @@ def creat_data(datafile, encoder_atom,encoder_bond,encode_two_path,encode_tree_p
 
 
     if is_file_in_directory(directory_path, target_file_name):
-        # 文件路径
         file_path = 'data/processed/'+ datasets+'.txt'
 
-        # 从文件中读取包含两个数组的数据
         combined_data = np.loadtxt(file_path, delimiter='\t')
 
         if datasets in ['qm9','qm8']:
-            # 切分数据为两个数组
-            min_val = combined_data[:, 0]  # 第一列是 Array 1
-            scale_val = combined_data[:, 1]  # 第二列是 Array 2
+            min_val = combined_data[:, 0]  
+            scale_val = combined_data[:, 1]  
             return min_val, scale_val
         
         else:
-            # 切分数据为两个数组
-            min_val = combined_data[0]  # 第一列是 Array 1
-            scale_val = combined_data[1]  # 第二列是 Array 2
+
+            min_val = combined_data[0]  
+            scale_val = combined_data[1]  
             return min_val, scale_val
 
 
@@ -366,17 +306,16 @@ def creat_data(datafile, encoder_atom,encoder_bond,encode_two_path,encode_tree_p
             'test_graph_feat': test_graph_feat,
             'test_graph_list': test_graph_list,
             'batch_size': batch_size,
-            'shuffle': True,  # 保存时假设你在创建 DataLoader 时使用了 shuffle=True
-            # 其他必要信息
+            'shuffle': True,  
         }, 'data/processed/'+ datafile +'.pth')
 
-        # 文件路径
+
         file_path = 'data/processed/'+datasets+'.txt'
 
-        # 将两个数组写入同一个文件，一次性写入
+
         combined_data = np.column_stack((min_val, scale_val))
 
-        # 加入注释
+ 
         header = 'Array 1\tArray 2'
         np.savetxt(file_path, combined_data, header=header, delimiter='\t')
                     
@@ -384,29 +323,142 @@ def creat_data(datafile, encoder_atom,encoder_bond,encode_two_path,encode_tree_p
         return min_val, scale_val
 
 
+def train(
+    model,
+    device,
+    target,
+    train_loader,
+    valid_loader,
+    optimizer,
+    epoch,
+    resent,
+    pooling,
+    datafile,                   
+    reduction: str = "mean",      
+    use_amp: bool = False,        
+    clip_norm = 1.0,
+    clip_value = None 
+):
+    model.train()
+    #scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
+    scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
 
+    total_train_loss = 0.0
+    n_train_batches = 0
 
-class CustomLoss(nn.Module):
-    def __init__(self, lambda_reg):
-        super(CustomLoss, self).__init__()
-        self.lambda_reg = lambda_reg  # 正则项的权重
+    autocast_ctx = torch.cuda.amp.autocast if use_amp else nullcontext
 
-    def forward(self, output, target, model):
-        # 计算普通的损失（比如MSE损失）
-        #criterion = nn.MSELoss()
-        loss = loss_fn(output, target)
-        
-        # 加入L2范数的正则项
-        l2_reg = 0.0
-        for param in model.parameters():
-            l2_reg += torch.norm(param, p=2)**2
-        loss += self.lambda_reg * l2_reg
-        
-        return loss
-    
+    for labels, g_feats, g, lg, fg in train_loader:
+        optimizer.zero_grad(set_to_none=True)
 
+        # ---- move to device ----
+        g_feats = g_feats.to(device) if isinstance(g_feats, torch.Tensor) else g_feats
+        g, lg, fg = g.to(device), lg.to(device), fg.to(device)
 
+        g_node = g.ndata['feat'].to(device)
+        g_edge = g.edata['feat'].to(device)
+        lg_node = lg.ndata['feat'].to(device)
+        lg_edge = lg.edata['feat'].to(device)
+        fg_node = fg.ndata['feat'].to(device)
+        fg_edge = fg.edata['feat'].to(device)
 
+        # ---- labels ----
+        if datafile in ['qm8', 'qm9']:
+            y = labels[:, target]
+        else:
+            y = labels
+
+        # 统一成 1D: [B]
+        y = y.squeeze(-1).to(device).float()
+
+        with autocast_ctx():
+            preds = model(
+                g_feats, g, lg, fg,
+                g_node, g_edge, lg_node, lg_edge, fg_node, fg_edge,
+                device=device, resent=resent, pooling=pooling
+            )
+
+            preds = preds.squeeze(-1).float()  # [B] or [B,1] -> [B]
+
+            # 如果 loss_fn 不是内置 reduction，可手动处理
+            loss = loss_fn(preds, y)
+            if reduction == "mean":
+                loss = loss.mean()
+            elif reduction == "sum":
+                loss = loss.sum()
+            else:
+                raise ValueError(f"Unsupported reduction: {reduction}")
+
+        # ---- backward ----
+        if use_amp:
+            scaler.scale(loss).backward()
+            # gradient clipping
+            if clip_norm is not None:
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=clip_norm)
+            elif clip_value is not None:
+                scaler.unscale_(optimizer)
+                torch.nn.utils.clip_grad_value_(model.parameters(), clip_value)
+            scaler.step(optimizer)
+            scaler.update()
+        else:
+            loss.backward()
+            if clip_norm is not None:
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=clip_norm)
+            elif clip_value is not None:
+                torch.nn.utils.clip_grad_value_(model.parameters(), clip_value)
+            optimizer.step()
+
+        total_train_loss += loss.detach().item()
+        n_train_batches += 1
+
+    avg_train_loss = total_train_loss / max(n_train_batches, 1)
+
+    # ---------------- Eval ----------------
+    model.eval()
+    total_val_loss = 0.0
+    n_val_batches = 0
+
+    with torch.no_grad():
+        for labels, g_feats, g, lg, fg in valid_loader:
+            g_feats = g_feats.to(device) if isinstance(g_feats, torch.Tensor) else g_feats
+            g, lg, fg = g.to(device), lg.to(device), fg.to(device)
+
+            g_node = g.ndata['feat'].to(device)
+            g_edge = g.edata['feat'].to(device)
+            lg_node = lg.ndata['feat'].to(device)
+            lg_edge = lg.edata['feat'].to(device)
+            fg_node = fg.ndata['feat'].to(device)
+            fg_edge = fg.edata['feat'].to(device)
+
+            if datafile in ['qm8', 'qm9']:
+                y = labels[:, target]
+            else:
+                y = labels
+            y = y.squeeze(-1).to(device).float()
+
+            preds = model(
+                g_feats, g, lg, fg,
+                g_node, g_edge, lg_node, lg_edge, fg_node, fg_edge,
+                device=device, resent=resent, pooling=pooling
+            )
+            preds = preds.squeeze(-1).float()
+
+            loss = loss_fn(preds, y)
+            if reduction == "mean":
+                loss = loss.mean()
+            elif reduction == "sum":
+                loss = loss.sum()
+
+            total_val_loss += loss.detach().item()
+            n_val_batches += 1
+
+    avg_val_loss = total_val_loss / max(n_val_batches, 1)
+
+    print(f"Epoch {epoch:03d} | Train Loss: {avg_train_loss:.6f} | Val Loss: {avg_val_loss:.6f}")
+    return avg_train_loss, avg_val_loss
+
+"""
 def train(model, device, target, train_loader, valid_loader, optimizer, epoch, resent,pooling,datafile):
     model.train()
 
@@ -445,6 +497,8 @@ def train(model, device, target, train_loader, valid_loader, optimizer, epoch, r
         train_label_pridct_tensor = model(g_feats, g, lg, fg, g_graph_node_feat,g_graph_edge_feat, lg_graph_node_feat, lg_graph_edge_feat,fg_graph_node_feat,fg_graph_edge_feat, device = device, resent = resent,pooling=pooling)
 
         
+
+        
         train_label_value_tensor = torch.cat(train_label_value, dim=0).to(device)
        # print(train_label_value_tensor.shape)
 
@@ -463,62 +517,59 @@ def train(model, device, target, train_loader, valid_loader, optimizer, epoch, r
         torch.nn.utils.clip_grad_value_(model.parameters(), clip_value=100.0)
         optimizer.step()
     
-    # 在整个批次上进行一次梯度计算和裁剪
-    '''
+
     model.eval()
-    if isinstance(loaded_valid_loader, list):
-        avg_vali_loss = 0
+
         
-    else:
-        total_loss_val = 0.0
-        for labels, g_feats, g, lg, fg in valid_loader:
-            
-            g = g.to(device)
-            lg = lg.to(device)
-            fg = fg.to(device)
 
-            g_graph_node_feat = g.ndata['feat'].to(device)
-            g_graph_edge_feat = g.edata['feat'].to(device)
-
-            lg_graph_node_feat = lg.ndata['feat'].to(device)
-            lg_graph_edge_feat = lg.edata['feat'].to(device)
-
-            fg_graph_node_feat = fg.ndata['feat'].to(device)
-            fg_graph_edge_feat = fg.edata['feat'].to(device)
-
-
-            label_value = []
-            if datafile in ['qm8','qm9']:
-                y = labels[:,target]
-            else:
-                y = labels
-            #y = labels[:, target]
-            #y = labels
-            
-            label_value.append(torch.unsqueeze(y, dim=0))
-            #graph_list = data[1]
-
-            label_pridct_tensor = model(g_feats, g, lg, fg, g_graph_node_feat,g_graph_edge_feat, lg_graph_node_feat, lg_graph_edge_feat,fg_graph_node_feat,fg_graph_edge_feat, device = device, resent = resent,pooling=pooling)
-            
-            label_value_tensor = torch.cat(label_value, dim=0).to(device)
-            label_pridct_tensor = torch.squeeze(label_pridct_tensor)
-            label_value_tensor = torch.squeeze(label_value_tensor)
-            
-            output = label_pridct_tensor.float()
-            label = label_value_tensor.float()
-
-            
-
-            loss = loss_fn(output, label)
-
-            loss = torch.sum(loss)
-            total_loss_val += loss
-
-    '''
     total_loss_val = 0.0
+    for labels, g_feats, g, lg, fg in valid_loader:
+        
+        g = g.to(device)
+        lg = lg.to(device)
+        fg = fg.to(device)
+
+        g_graph_node_feat = g.ndata['feat'].to(device)
+        g_graph_edge_feat = g.edata['feat'].to(device)
+
+        lg_graph_node_feat = lg.ndata['feat'].to(device)
+        lg_graph_edge_feat = lg.edata['feat'].to(device)
+
+        fg_graph_node_feat = fg.ndata['feat'].to(device)
+        fg_graph_edge_feat = fg.edata['feat'].to(device)
+
+
+        label_value = []
+        if datafile in ['qm8','qm9']:
+            y = labels[:,target]
+        else:
+            y = labels
+        #y = labels[:, target]
+        #y = labels
+        
+        label_value.append(torch.unsqueeze(y, dim=0))
+        #graph_list = data[1]
+
+        label_pridct_tensor = model(g_feats, g, lg, fg, g_graph_node_feat,g_graph_edge_feat, lg_graph_node_feat, lg_graph_edge_feat,fg_graph_node_feat,fg_graph_edge_feat, device = device, resent = resent,pooling=pooling)
+        
+        label_value_tensor = torch.cat(label_value, dim=0).to(device)
+        label_pridct_tensor = torch.squeeze(label_pridct_tensor)
+        label_value_tensor = torch.squeeze(label_value_tensor)
+        
+        output = label_pridct_tensor.float()
+        label = label_value_tensor.float()
+
+        
+
+        loss = loss_fn(output, label)
+
+        loss = torch.sum(loss)
+        total_loss_val += loss
+
+
     print(f"Epoch {epoch}|Train Loss: {total_train_loss:.4f}|Average Vali Loss:{total_loss_val:.4f}")
     return total_train_loss, total_loss_val
-
+"""
 
 
 
@@ -654,7 +705,7 @@ if __name__ == '__main__':
         device = torch.device('cpu')
         print('The code uses CPU!!!')
     
-    # 设置种子
+
     seed = 42
     set_seed(seed)
 
@@ -748,60 +799,61 @@ if __name__ == '__main__':
     ALl_MAE = []
 
     
+    for i in range(iter): 
+            
+        if model_select == 'pcnn':
+            model = PCNN(in_feats=10, hidden_size = 32, out_feats=64, encode_dim=encode_dim, out_dim = out_dim,tras_med = tras_med,num_blcok=num_blcok,num_heads=num_heads,num_layers=num_layers)
 
-    if model_select == 'pcnn':
-        model = PCNN(in_feats=10, hidden_size = 32, out_feats=64, encode_dim=encode_dim, out_dim = out_dim,tras_med = tras_med,num_blcok=num_blcok,num_heads=num_heads,num_layers=num_layers)
+        else:
+            print('No found model!!!')
 
-    else:
-        print('No found model!!!')
-
-    #print(model)
-    total_params = sum(p.numel() for p in model.parameters())
-    print(f"Total parameters: {total_params}")
-    
-    MAE_list = []
-    train_loss_dic = {}
-    vali_loss_dic = {}
-
-    #model = nn.DataParallel(model)
-    #model.to('cuda')
-    model = model.to(device)
-    if loss_sclect == 'l1':
-        #loss_fn = nn.L1Loss(reduction='none')
-        loss_fn = nn.L1Loss(reduction='sum')#sum,mean,none
+        #print(model)
+        total_params = sum(p.numel() for p in model.parameters())
+        print(f"Total parameters: {total_params}")
         
-    if loss_sclect == 'l2':
-        loss_fn = nn.MSELoss(reduction='sum')
+        MAE_list = []
+        train_loss_dic = {}
+        vali_loss_dic = {}
 
-    if loss_sclect == 'sml1':
-        loss_fn = nn.SmoothL1Loss(reduction='sum')#mean,none,sum
+        #model = nn.DataParallel(model)
+        #model.to('cuda')
+        model = model.to(device)
+        if loss_sclect == 'l1':
+            #loss_fn = nn.L1Loss(reduction='none')
+            loss_fn = nn.L1Loss(reduction='sum')#sum,mean,none
+            
+        if loss_sclect == 'l2':
+            loss_fn = nn.MSELoss(reduction='sum')
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=LR)
+        if loss_sclect == 'sml1':
+            loss_fn = nn.SmoothL1Loss(reduction='sum')#mean,none,sum
 
-    scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
+        optimizer = torch.optim.Adam(model.parameters(), lr=LR)
 
-    best_MAE = 1000
-    for epoch in range(NUM_EPOCHS):
-        train_loss,vali_loss = train(model, device, target, loaded_train_loader, loaded_valid_loader,optimizer, epoch + 1, resent, pooling, datafile)
+        scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
+
+        best_MAE = 1000
+        for epoch in range(NUM_EPOCHS):
+            train_loss,vali_loss = train(model, device, target, loaded_train_loader, loaded_valid_loader,optimizer, epoch + 1, resent, pooling, datafile)
 
 
-        MAE = predicting(model, device, target, loaded_test_loader, min_val, max_val,resent, pooling,datafile, out_dim)
-        
-        
-        if MAE < best_MAE:
-            logger.info(f'MAE: {MAE:.5f}')
-            formatted_number = "{:.5f}".format(MAE)
-            best_MAE = float(formatted_number)
-            MAE_list.append(best_MAE)
-            print(f"Epoch [{epoch+1}], Learning Rate: {scheduler.get_last_lr()}")
+            MAE = predicting(model, device, target, loaded_test_loader, min_val, max_val,resent, pooling,datafile, out_dim)
+            
+            
+            if MAE < best_MAE:
+                logger.info(f'MAE: {MAE:.5f}')
+                formatted_number = "{:.5f}".format(MAE)
+                best_MAE = float(formatted_number)
+                MAE_list.append(best_MAE)
+                print(f"Epoch [{epoch+1}], Learning Rate: {scheduler.get_last_lr()}")
 
-        if epoch % 10 == 0:
-            print("-------------------------------------------------------")
-            print("epoch:",epoch)
-            print('best_MAE:', best_MAE)
-        
-        if epoch == NUM_EPOCHS-1:
-            #MAE_list.append(best_MAE)
-            min_mae = min(MAE_list) 
-            print(f"The best min mae score up to {i+1}-loop is :",min_mae)
-            ALl_MAE.append(min_mae)
+            if epoch % 10 == 0:
+                print("-------------------------------------------------------")
+                print("epoch:",epoch)
+                print('best_MAE:', best_MAE)
+            
+            if epoch == NUM_EPOCHS-1:
+                #MAE_list.append(best_MAE)
+                min_mae = min(MAE_list) 
+                print(f"The best min mae score up to {i+1}-loop is :",min_mae)
+                ALl_MAE.append(min_mae)
