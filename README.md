@@ -1,3 +1,10 @@
+# Path Complex Neural Network (PCNN)
+
+This repository contains the **official implementation** of our paper  
+[*Path Complex Neural Network for Molecular Property Prediction*](https://openreview.net/forum?id=FlnGcMp6FL),  
+presented at the ICML 2024 Workshop on Geometry-grounded Representation Learning and Generative Modeling.
+
+
 # Path-Complex-Neural-Network
 As a generalization of simplicial complexes, path complexes provide a powerful framework for modeling the connections and interactions within a set, such as the atoms in a molecule. By integrating with molecular mechanics models, path complexes can enhance the accuracy of predictions related to molecular properties.
 
