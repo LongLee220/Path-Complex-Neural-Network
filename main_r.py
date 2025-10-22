@@ -257,7 +257,6 @@ def creat_data(datafile, encoder_atom,encoder_bond,encode_two_path,encode_tree_p
             else:
                 print(i)
                 t += 1
-        print('无效的个数：', t)
 
         #data_list = [['occr',albel,[c_size, features, edge_indexs],[g,liearn_g]],[],...,[]]
 
@@ -368,7 +367,6 @@ def train(
         else:
             y = labels
 
-        # 统一成 1D: [B]
         y = y.squeeze(-1).to(device).float()
 
         with autocast_ctx():
@@ -380,7 +378,6 @@ def train(
 
             preds = preds.squeeze(-1).float()  # [B] or [B,1] -> [B]
 
-            # 如果 loss_fn 不是内置 reduction，可手动处理
             loss = loss_fn(preds, y)
             if reduction == "mean":
                 loss = loss.mean()
