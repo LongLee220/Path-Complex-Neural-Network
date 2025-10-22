@@ -67,7 +67,7 @@ Download the datasets from [MoleculeNet](https://moleculenet.org/datasets-1). Pl
 ### Configure Dataset Usage
 To use different datasets, modify the `path.yaml` file in the `config` directory:
 ```yaml
-select_dataset: "qm8"  # Replace "qm8" with "qm7" or "qm9" as needed
+select_dataset: "qm7"  # Replace "qm8" with "qm7" or "qm9" as needed
 ```
 
 ## Running the Project
