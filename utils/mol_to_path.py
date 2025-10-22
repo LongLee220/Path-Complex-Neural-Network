@@ -44,14 +44,14 @@ def calculate_angle(A, B, C):
     if norm_AB * norm_BC != 0:
         cos_theta = dot_product / (norm_AB * norm_BC)
     else:
-        # 处理分母为零的情况，例如给一个默认值或进行其他操作
-        cos_theta = 0.0  # 你可以根据具体情况调整这里的值
+ 
+        cos_theta = 0.0  
     #cos_theta = dot_product / (norm_AB * norm_BC)
-    # 假设 cos_theta 是你的输入
+
     if -1 <= cos_theta <= 1:
         angle_rad = np.arccos(cos_theta)
     else:
-    # 在这里处理无效的输入，例如给出一个默认值或者引发异常
+
         angle_rad = 0  # 或者 raise ValueError("Invalid cos_theta value")
 
     #angle_rad = np.arccos(cos_theta)
@@ -65,20 +65,20 @@ def calculate_angle(A, B, C):
 def calculate_triangle_properties(point1, point2, point3,encode_two_path):
     point1, point2, point3 = point1.cpu().numpy(), point2.cpu().numpy(), point3.cpu().numpy()
     pps = []
-    # 计算质心坐标
+
     centroid = np.mean([point1, point2, point3], axis=0)
     #pps.append(centroid)
-    # 计算坐标到质心的距离
+
     distances = [np.linalg.norm(point - centroid) for point in [point1, point2, point3]]
     pps.extend(distances)
-    # 计算三角形的边长
+
     a = np.linalg.norm(point2 - point1)
     b = np.linalg.norm(point3 - point2)
     c = np.linalg.norm(point1 - point3)
     pps.extend([a,b,c])
 
     if encode_two_path == "dim_8":
-        # 计算三角形的角度（弧度）
+
         A = calculate_angle(point1, point2, point3)
         #B = calculate_angle(point2, point1, point3)
         #C = calculate_angle(point2, point3, point1)
@@ -86,7 +86,7 @@ def calculate_triangle_properties(point1, point2, point3,encode_two_path):
         pps.extend([A,A**2])
 
     elif encode_two_path == "dim_10":
-        # 计算三角形的角度（弧度）
+    
         A = calculate_angle(point1, point2, point3)
         B = calculate_angle(point2, point1, point3)
         C = calculate_angle(point2, point3, point1)
@@ -95,7 +95,7 @@ def calculate_triangle_properties(point1, point2, point3,encode_two_path):
 
     
     if a > 0 and b > 0 and c > 0 and (a + b > c) and (a + c > b) and (b + c > a):
-        s = 0.5 * (a + b + c)  # 半周长
+        s = 0.5 * (a + b + c)  
         area = np.sqrt(s * (s - a) * (s - b) * (s - c))
         pps.append(area)
     else:
@@ -109,11 +109,11 @@ def calculate_triangle_properties(point1, point2, point3,encode_two_path):
 def cross_product(a, b):
     return np.cross(a, b)
 
-# 计算向量长度
+
 def vector_length(a):
     return np.linalg.norm(a)
 
-# 计算四个顶点形成的四面体的四个面积
+
 def tetrahedron_areas(a, b, c, d):
     ab = b - a
     ac = c - a
@@ -132,14 +132,13 @@ def tetrahedron_areas(a, b, c, d):
 
 
 def calculate_triangle_area(point1, point2, point3):
-    # 计算两个向量
-    # 计算三角形的边长
+  
     a = np.linalg.norm(point2 - point1)
     b = np.linalg.norm(point3 - point2)
     c = np.linalg.norm(point1 - point3)
     
     if a > 0 and b > 0 and c > 0 and (a + b > c) and (a + c > b) and (b + c > a):
-        s = 0.5 * (a + b + c)  # 半周长
+        s = 0.5 * (a + b + c)  
         area = np.sqrt(s * (s - a) * (s - b) * (s - c))
         return area
     else:
@@ -147,18 +146,11 @@ def calculate_triangle_area(point1, point2, point3):
     
 
 def area_of_quadrilateral(p1, p2, p3, p4):
-    """
-    计算四边形的面积
-    参数:
-        p1, p2, p3, p4: 四个点的坐标，每个点为一个三维向量，如 [x, y, z]
-    返回值:
-        四边形的面积
-    """
-    # 计算两个对角线向量
+    
     d1 = np.array(p2) - np.array(p4)
     d2 = np.array(p3) - np.array(p1)
     
-    # 使用向量叉乘计算面积
+
     area = 0.5 * np.linalg.norm(np.cross(d1, d2))
     
     return area
@@ -172,7 +164,7 @@ def calculate_dihedral_angle(point1, point2, point3,point4,encode_tree_path):
     pps.extend([volume])
 
     if encode_tree_path == "dim_6":
-    # 计算四个面的法向量
+
         normal_vectors = [
             np.cross(point2 - point1, point3 - point1),
             np.cross(point3 - point2, point4 - point2),
@@ -181,7 +173,7 @@ def calculate_dihedral_angle(point1, point2, point3,point4,encode_tree_path):
         ]
 
         
-    # 计算四个面的二面角
+
     angles = []
     for i in range(len(normal_vectors)):
         norm_i = np.linalg.norm(normal_vectors[i])
@@ -199,13 +191,13 @@ def calculate_dihedral_angle(point1, point2, point3,point4,encode_tree_path):
 
     pps.extend(angles)
      
-    #关键边
+
     #dis_1 = calculate_dis(point2, point3)
     dis_2 = calculate_dis(point1, point4)
     
     pps.extend([dis_2])
 
-    #面积
+
     #face_1 = calculate_triangle_area(point1, point2, point3)
     #face_2 = calculate_triangle_area(point2, point3,point4)
     #pps.extend([face_1,face_2])
@@ -213,7 +205,7 @@ def calculate_dihedral_angle(point1, point2, point3,point4,encode_tree_path):
     #area = area_of_quadrilateral(point1, point2, point3,point4)
     #pps.extend([area])
 
-    #四面体表面积
+
     area = area_of_quadrilateral(point1, point2, point3,point4)
     pps.extend([area])
 
@@ -287,25 +279,25 @@ def non_bonded(charge_list,i,j,dis):
 
 def mmff_force_field(mol):
     try:
-        # 尝试嵌入分子
+        
         AllChem.EmbedMolecule(mol)
-        # 创建 MMFF 力场
+        
         AllChem.MMFFGetMoleculeForceField(mol, AllChem.MMFFGetMoleculeProperties(mol))
         return True
     except ValueError:
-        # 如果捕获到ValueError异常，则无法嵌入分子，返回False
+        
         return False
 
 
 def uff_force_field(mol):
     try:
-        # 尝试嵌入分子
+
         AllChem.EmbedMolecule(mol)
-        # 创建 MMFF 力场
+ 
         AllChem.UFFGetMoleculeForceField(mol)
         return True
     except ValueError:
-        # 如果捕获到ValueError异常，则无法嵌入分子，返回False
+        
         return False
     
 def random_force_field(mol):
@@ -314,24 +306,30 @@ def random_force_field(mol):
         AllChem.EmbedMultipleConfs(mol, numConfs=10, randomSeed=42)
         return True
     except ValueError:
-        # 如果捕获到ValueError异常，则无法嵌入分子，返回False
+        
         return False
 
 
 def check_common_elements(list1, list2, element1, element2):
     if len(list1) != len(list2):
-        return False  # 如果列表长度不相同，直接返回 False
+        return False  
     
     for i in range(len(list1)):
         if list1[i] == element1 and list2[i] == element2:
-            return True  # 如果找到一对匹配的元素，返回 True
+            return True 
     
-    return False  # 如果没有找到匹配的元素，返回 False
+    return False  
 
 def atom_to_graph(smiles,encoder_atom,encoder_bond):
     
     mol = Chem.MolFromSmiles(smiles)
-    mol = Chem.AddHs(mol)  # 加氢
+    if mol is None:
+        return False
+    else:
+        mol = Chem.AddHs(mol) 
+
+    #mol = Chem.MolFromSmiles(smiles)
+    #mol = Chem.AddHs(mol)  # 加氢
     sps_features = []
     coor = []
     edge_id = []
@@ -369,19 +367,17 @@ def atom_to_graph(smiles,encoder_atom,encoder_bond):
 
                     sps_features.append(per_atom_feat )
                         
-                    
-                    # 获取原子坐标信息
+
                     pos = mol.GetConformer().GetAtomPosition(ii)
                     coor.append([pos.x, pos.y, pos.z])
 
-                    # 获取电荷并存储
                     charge = s.GetProp("_GasteigerCharge")
                     atom_charges.append(charge)
 
                 edge_features = []
                 src_list, dst_list = [], []
                 for bond in mol.GetBonds():
-                    bond_type = bond.GetBondTypeAsDouble() # 存储键信息
+                    bond_type = bond.GetBondTypeAsDouble() 
                     src = bond.GetBeginAtomIdx()
                     dst = bond.GetEndAtomIdx()
 
@@ -629,7 +625,6 @@ def create_dihedral_angle(g, lg, encode_tree_path):
 
 def path_complex_mol(Smile, encoder_atom,encoder_bond,encode_two_path,encode_tree_path):
     #generate graph
-    # 创建一个空的DGL图
     g = atom_to_graph(Smile,encoder_atom,encoder_bond)
     
     if g != False:
@@ -650,7 +645,6 @@ def path_complex_mol(Smile, encoder_atom,encoder_bond,encode_two_path,encode_tre
 
 
 if __name__ == '__main__':
-    # 创建一个简单的图
     smiles = '[H]C([H])([H])C([H])([H])[H]'
     encoder_atom = "cgcnn"
     encoder_bond = "dim_14"
@@ -659,16 +653,3 @@ if __name__ == '__main__':
     encoder_bond = encode_two_path,encode_tree_path
     Graph_list = path_complex_mol(smiles, encoder_atom,encoder_bond,encode_two_path,encode_tree_path)
     print(Graph_list)
-
-'''
-if __name__ == '__main__':
-    # 创建一个简单的图
-    smiles = '[H]C([H])([H])C([H])([H])[H]'
-    encoder_atom = "cgcnn"
-    encoder_bond = "dim_14"
-    encode_two_path = "dim_8"
-    encode_tree_path = "dim_6"
-    encoder_bond = encode_two_path,encode_tree_path
-    Graph_list = path_complex_mol(smiles, encoder_atom,encoder_bond)
-    print(Graph_list)
-'''
