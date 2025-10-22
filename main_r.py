@@ -673,10 +673,10 @@ def predicting(model, device,target, data_loader, min_val, max_val,resent,poolin
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description="示例命令行工具")
+    parser = argparse.ArgumentParser(description="help")
 
     
-    parser.add_argument("--config", type=str, help="配置文件路径")
+    parser.add_argument("--config", type=str, help="path")
 
     args = parser.parse_args()
     args.config = './config/r_path.yaml'
