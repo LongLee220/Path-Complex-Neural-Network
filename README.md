@@ -74,7 +74,11 @@ select_dataset: "qm8"  # Replace "qm8" with "qm7" or "qm9" as needed
 
 Execute the project with the configured dataset by running:
 ```bash
-python main.py
+python main_c.py
+```
+or
+```
+python main_r.py
 ```
 
 
