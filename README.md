@@ -101,4 +101,16 @@ The following table presents the comparison of PCNN with various GNN architectur
 | SMPT                | *                 | *                  | 0.797 _(0.001)_    | 0.812 _(0.001)_    | 0.822 _(0.008)_    |
 | **PCNN**            | **53.6 _(2.1)_**  | **0.00683 _(0.00005)_** | **0.801 _(0.002)_** | **0.823 _(0.004)_** | **0.827 _(0.015)_** |
 
+## Citation
 
+If you find this code useful, please cite:
+
+```bibtex
+@inproceedings{
+li2024path,
+title={Path Complex Neural Network for Molecular Property Prediction},
+author={Longlong Li and Xiang LIU and Guanghui Wang and Yu Guang Wang and KELIN XIA},
+booktitle={ICML 2024 Workshop on Geometry-grounded Representation Learning and Generative Modeling},
+year={2024},
+url={https://openreview.net/forum?id=FlnGcMp6FL}
+}
