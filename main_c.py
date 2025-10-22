@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Jan 20 15:08:37 2024
-
+Author: LongLee
 """
 
 import torch.nn as nn
@@ -87,97 +87,10 @@ def collate_fn(batch):
     return labels, graph_feat,l_g, g_g, f_g
 
 
-
-def has_node_with_zero_in_degree(graph):
-    if (graph.in_degrees() == 0).any():
-                return True
-    
-    #for graph in graph_list:
-    #    if (graph.in_degrees() == 0).any():
-    #        return True
-        
-    return False
-
-
-def has_isolated_hydrogens(samiles):
-    # 获取分子中的原子
-    molecule = Chem.MolFromSmiles(samiles)
-    mol = Chem.AddHs(molecule)  # 加氢
-    if molecule is None:
-        return True
-    
-    atoms = mol.GetAtoms()
-    if len(atoms) <= 2:
-        return True
-    
-    # 遍历原子
-    for atom in atoms:
-        # 如果原子是氢原子且没有邻居
-        if atom.GetAtomicNum() == 1 and atom.GetDegree() == 0:
-            return True  # 存在孤立的氢原子
-    
-    return False  # 不存在孤立的氢原子
-
-
-
-
-
-def conformers_is_zero(smiles):
-    mol = Chem.MolFromSmiles(smiles)
-    mol = Chem.AddHs(mol)  # 加氢
-    AllChem.EmbedMultipleConfs(mol, numConfs=10, randomSeed=42) 
-    # 检查是否有构象
-    num_conformers = mol.GetNumConformers()
-
-    G = nx.Graph()
-    for bond in mol.GetBonds():
-        G.add_edge(bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
-
-    # 检查图是否为连通图
-    if G.number_of_nodes() > 0:
-        is_connected = nx.is_connected(G)
-        if num_conformers > 0 and is_connected == True:
-            return True
-    else:
-        return False
-    
-
-    
-def min_max_normalize(data):
-    # 找到最小值和最大值
-    min_val = min(data)
-    max_val = max(data)
-
-    # 对每个数据点应用Min-Max归一化公式
-    normalized_data = [(x - min_val) / (max_val - min_val) for x in data]
-
-    return normalized_data, min_val, max_val
-
-
-def inverse_min_max_normalize(x, min_val, max_val):
-    # 对每个归一化后的数据点应用逆操作
-    original_data = x * (max_val - min_val)
-    return original_data
-
 def is_file_in_directory(directory, target_file):
     file_path = os.path.join(directory, target_file)
     return os.path.isfile(file_path)
 
-
-def unique(class_target):
-    # 假设 y_true_np 是你的 NumPy 数组
-    unique_classes, counts = np.unique(class_target, return_counts=True)
-
-    # 打印唯一的类别和它们的出现次数
-    for class_label, count in zip(unique_classes, counts):
-        print(f"Class {class_label}: {count} samples")
-
-    # 检查类别数量
-    num_classes = len(unique_classes)
-    if num_classes == 2:
-        print("y_true_np 包含两个不同的类别.")
-    else:
-        print("y_true_np 不包含两个不同的类别.")
 
 #others
 def get_label():
@@ -228,29 +141,6 @@ def get_muv():
             'MUV-852',	'MUV-858','MUV-859']
 
 
-def auc_function(y_true, y_pred):
-    """
-    计算两个张量之间的均方根误差（RMSE）。
-
-    参数:
-    - y_true (torch.Tensor): 真实标签的张量。
-    - y_pred (torch.Tensor): 预测值的张量。
-
-    返回:
-    - torch.Tensor: RMSE 值。
-    """
-    assert y_true.shape == y_pred.shape, "y_true and y_pred must have the same shape"
-    y_true = y_true.to(torch.float32)
-    assert y_true.dtype == y_pred.dtype, "y_true and y_pred must have the same dtype"
-    y_true_np = y_true.cpu().numpy()
-    y_pred_np = y_pred.cpu().numpy()
-
-    unique(y_true_np)
-    unique(y_pred_np)
-
-    auc = roc_auc_score(y_true_np, y_pred_np)
-    auc = auc.item()
-    return auc
 
 
 
@@ -299,8 +189,6 @@ def creat_data(datafile, encoder_atom, encoder_bond,encode_two_path, encode_tree
         data_list = []
         feature_sets = ("atomic_number", "basic", "cfid", "cgcnn")
         for i in range(len(smiles_list)):
-            if i % 1000 == 0:
-                print(i)
 
             smiles = smiles_list[i]
             graph_feats = torch.tensor([0])
@@ -363,27 +251,9 @@ def creat_data(datafile, encoder_atom, encoder_bond,encode_two_path, encode_tree
             'test_graph_feat': test_graph_feat,
             'test_graph_list': test_graph_list,
             'batch_size': batch_size,
-            'shuffle': True,  # 保存时假设你在创建 DataLoader 时使用了 shuffle=True
-            # 其他必要信息
+            'shuffle': True,  
         }, 'data/processed/'+ datafile +'.pth')
         
-
-
-
-class FocalLoss(nn.Module):
-    def __init__(self, gamma=2.0, alpha=0.25):
-        super(FocalLoss, self).__init__()
-        self.gamma = gamma
-        self.alpha = alpha
-        self.bce_with_logits = nn.BCEWithLogitsLoss(reduction='none')
-    
-    def forward(self, inputs, targets):
-        logits = self.bce_with_logits(inputs, targets)
-        probs = torch.sigmoid(inputs)
-        p_t = probs * targets + (1 - probs) * (1 - targets)
-        alpha_factor = self.alpha * targets + (1 - self.alpha) * (1 - targets)
-        modulating_factor = torch.pow(1.0 - p_t, self.gamma)
-        return torch.mean(alpha_factor * modulating_factor * logits)
 
 
 
@@ -400,7 +270,7 @@ def train(model, device, train_loader, valid_loader, optimizer, epoch):
         g = g.to(device)
         lg = lg.to(device)
         fg = fg.to(device)
-        #print(g,lg,fg)
+        y = y.to(device)
         g_graph_node_feat = g.ndata['feat'].to(device)
         g_graph_edge_feat = g.edata['feat'].to(device)
 
@@ -409,86 +279,50 @@ def train(model, device, train_loader, valid_loader, optimizer, epoch):
 
         fg_graph_node_feat = fg.ndata['feat'].to(device)
         fg_graph_edge_feat = fg.edata['feat'].to(device)
-        '''
-        print("Max of g_graph_node_feat:", g_graph_node_feat.max().item())
-
-        print("Max of g_graph_edge_feat:", g_graph_edge_feat.max().item())
-        print("Min of g_graph_edge_feat:", g_graph_edge_feat.min().item())
-
-        print("Max of lg_graph_edge_feat:", lg_graph_edge_feat.max().item())
-        print("Min of lg_graph_edge_feat:", lg_graph_edge_feat.min().item())
-
-        print("Max of fg_graph_edge_feat:", fg_graph_edge_feat.max().item())
-        print("Min of fg_graph_edge_feat:", fg_graph_edge_feat.min().item())
-        '''
-        output = model(g_feats, g, lg, fg, g_graph_node_feat,g_graph_edge_feat, lg_graph_node_feat, lg_graph_edge_feat,fg_graph_node_feat,fg_graph_edge_feat, device = device, resent = resent,pooling=pooling).cpu()
         
+        out = model(g_feats, g, lg, fg, g_graph_node_feat,g_graph_edge_feat, lg_graph_node_feat, lg_graph_edge_feat,fg_graph_node_feat,fg_graph_edge_feat, device = device, resent = resent,pooling=pooling)
+        
+        y = y.to(dtype= out.dtype)
+        mask = (y != -1).to(dtype=out.dtype)          
+        y_clean = torch.where(y == -1, torch.zeros_like(y), y)
 
-        arr_label = torch.Tensor().cpu()
-        arr_pred = torch.Tensor().cpu()
-        for j in range(y.shape[1]):
-            c_valid = np.ones_like(y[:, j], dtype=bool)
-            c_label, c_pred = y[c_valid, j], output[c_valid, j]
-            zero = torch.zeros_like(c_label)
-            c_label = torch.where(c_label == -1, zero, c_label)
-            
-            arr_label = torch.cat((arr_label,c_label),0)
-            arr_pred = torch.cat((arr_pred,c_pred),0)
         
-        arr_pred = arr_pred.float()
-        arr_label = arr_label.float()
-        
-        #print("Max of arr_pred:", arr_pred.max().item())
-        #print("Min of arr_pred:", arr_pred.min().item())
+        loss_elem = loss_fn(out, y_clean)             
+        loss = (loss_elem * mask).sum() / mask.sum().clamp_min(1.0)
 
-        loss = loss_fn(arr_pred, arr_label)
-        
-        train_loss = torch.sum(loss)
-        total_train_loss = total_train_loss + train_loss
-        train_loss.backward()
+        loss.backward()
         optimizer.step()
+
+        total_train_loss += loss.item() 
     
-    # 在整个批次上进行一次梯度计算和裁剪
-    '''
-    if isinstance(loaded_valid_loader, list):
-        avg_vali_loss = 0
-    else:
-        model.eval()
-        total_loss_val = 0.0
-        vali_num = 0
-        arr_data = []
-
-        for batch_idx, data in enumerate(valid_loader):
-
-            label_value = []
-            y = data[0]
-            label_value.append(torch.unsqueeze(y, dim=0))
-            graph_list = update_node_features(data[1]).to(device)
-            node_features = graph_list.ndata['feat'].to(device)
-            #output = model(batch_g_list = graph_list, device = device, resent = resent,pooling=pooling).cpu()
-            output = model(graph_list, node_features).cpu()
-
-            
-            arr_label = torch.Tensor().cpu()
-            arr_pred = torch.Tensor().cpu()
-            for j in range(y.shape[1]):
-                c_valid = np.ones_like(y[:, j], dtype=bool)
-                c_label, c_pred = y[c_valid, j], output[c_valid, j]
-                zero = torch.zeros_like(c_label)
-                c_label = torch.where(c_label == -1, zero, c_label)
-                
-                arr_label = torch.cat((arr_label,c_label),0)
-                arr_pred = torch.cat((arr_pred,c_pred),0)
-            
-            arr_pred = arr_pred.float()
-            arr_label = arr_label.float()
-            loss = loss_fn(arr_pred, arr_label)
-            #loss = FocalLoss(arr_pred, arr_label)
-
-            loss = torch.sum(loss)
-            total_loss_val += loss
-        '''
+    model.eval()
     total_loss_val = 0.0
+    with torch.no_grad():
+        for y, g_feats, g, lg, fg in valid_loader:
+            g = g.to(device)
+            lg = lg.to(device)
+            fg = fg.to(device)
+            y = y.to(device)
+            g_graph_node_feat = g.ndata['feat'].to(device)
+            g_graph_edge_feat = g.edata['feat'].to(device)
+
+            lg_graph_node_feat = lg.ndata['feat'].to(device)
+            lg_graph_edge_feat = lg.edata['feat'].to(device)
+
+            fg_graph_node_feat = fg.ndata['feat'].to(device)
+            fg_graph_edge_feat = fg.edata['feat'].to(device)
+            
+            out = model(g_feats, g, lg, fg, g_graph_node_feat,g_graph_edge_feat, lg_graph_node_feat, lg_graph_edge_feat,fg_graph_node_feat,fg_graph_edge_feat, device = device, resent = resent,pooling=pooling)
+            
+            y = y.to(dtype=out.dtype)
+            mask = (y != -1).to(dtype=out.dtype)
+            y_clean = torch.where(y == -1, torch.zeros_like(y), y)
+
+            loss_elem = loss_fn(out, y_clean)      
+            vloss = (loss_elem * mask).sum() / mask.sum().clamp_min(1.0)
+
+            total_loss_val += vloss.item()
+
     print(f"Epoch {epoch}|Train Loss: {total_train_loss:.4f}| Vali Loss:{total_loss_val:.4f}")
 
     return total_train_loss, total_loss_val
@@ -540,19 +374,17 @@ def predicting(model, device, data_loader):
 
 
 def parse_arguments():
-    parser = argparse.ArgumentParser(description="示例命令行工具")
+    parser = argparse.ArgumentParser(description="help")
 
-    # 添加命令行参数
-    parser.add_argument("--config", type=str, help="配置文件路径")
+    parser.add_argument("--config", type=str, help="path")
 
     args = parser.parse_args()
     args.config = './config/c_path.yaml'
-    # 如果提供了配置文件路径，则加载配置文件
     if args.config:
         with open(args.config, "r") as config_file:
             config = yaml.safe_load(config_file)
 
-        # 将配置文件中的参数添加到命令行参数中
+        
         for key, value in config.items():
             setattr(args, key, value)
 
@@ -647,65 +479,70 @@ if __name__ == '__main__':
     set_seed(seed)
     
         
-    AUC_list = []
-    
-    if model_select == 'pcnn':
-        model = PCNN(in_feats=10, hidden_size = 32, out_feats=64, encode_dim=encode_dim, out_dim = target_dim,tras_med = tras_med,num_blcok=num_blcok,num_heads=num_heads,num_layers=num_layers)
+    All_AUC = []
 
-    else:
-        print('No found model!!!')
-    
-    
-    total_params = sum(p.numel() for p in model.parameters())
-    print(f"Total parameters: {total_params}")
-
-    train_loss_dic = {}
-    vali_loss_dic = {}
-
-    #model = modeling().to(device)
-    model = model.to(device)
-    if loss_sclect == 'l1':
-        #loss_fn = nn.L1Loss()
-        loss_fn = nn.L1Loss(reduction='sum')#sum，mean,none
-
-    if loss_sclect == 'l2':
-        loss_fn = nn.MSELoss(reduction='none')
-
-    if loss_sclect == 'sml1':
-        loss_fn = nn.SmoothL1Loss(reduction='sum')#mean,none,sum
-
-    if loss_sclect == 'bce':
-        loss_fn = nn.BCELoss(reduction='mean')#mean
-    
-
-    optimizer = torch.optim.Adam(model.parameters(), lr=LR)
-    scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
-    best_auc = 0
-    for epoch in range(NUM_EPOCHS):
-        train_loss,vali_loss = train(model, device, loaded_train_loader, loaded_valid_loader, optimizer, epoch + 1)
-
+    for i in range(iter):
         
-        AUC = predicting(model, device, loaded_test_loader)
+        AUC_list = []
+        if model_select == 'pcnn':
+            model = PCNN(in_feats=10, hidden_size = 32, out_feats=64, encode_dim=encode_dim, out_dim = target_dim,tras_med = tras_med,num_blcok=num_blcok,num_heads=num_heads,num_layers=num_layers)
+
+        else:
+            print('No found model!!!')
         
         
-        if AUC > best_auc:
-            best_auc = AUC
-            logger.info(f'AUC: {best_auc:.5f}')
-            formatted_number = "{:.5f}".format(best_auc)
-            best_auc = float(formatted_number)
-            AUC_list.append(best_auc)
+        total_params = sum(p.numel() for p in model.parameters())
+        print(f"Total parameters: {total_params}")
 
-            print(f"Epoch [{epoch+1}], Learning Rate: {scheduler.get_last_lr()}")
+        train_loss_dic = {}
+        vali_loss_dic = {}
 
-        if epoch % 10 == 0:
-            #MAE_list.append(best_MAE)
-            print("-------------------------------------------------------")
-            print("epoch:",epoch)
-            print('best_MAE:', best_auc)
+        #model = modeling().to(device)
+        model = model.to(device)
+        if loss_sclect == 'l1':
+            #loss_fn = nn.L1Loss()
+            loss_fn = nn.L1Loss(reduction='sum')#sum，mean,none
+
+        if loss_sclect == 'l2':
+            loss_fn = nn.MSELoss(reduction='none')
+
+        if loss_sclect == 'sml1':
+            loss_fn = nn.SmoothL1Loss(reduction='sum')#mean,none,sum
+
+        if loss_sclect == 'bce':
+            loss_fn = nn.BCELoss(reduction='mean')#mean
         
-        if epoch == NUM_EPOCHS-1:
-            print(f"the best result up to {i+1}-loop is {best_auc:.4f}.")
-            formatted_number = "{:.5f}".format(best_auc)
-            All_AUC.append(best_auc)
+
+        optimizer = torch.optim.Adam(model.parameters(), lr=LR)
+        scheduler = StepLR(optimizer, step_size=5, gamma=0.5)
+        best_auc = 0
+        for epoch in range(NUM_EPOCHS):
+            train_loss,vali_loss = train(model, device, loaded_train_loader, loaded_valid_loader, optimizer, epoch + 1)
+
+            
+            AUC = predicting(model, device, loaded_test_loader)
+            
+            
+            if AUC > best_auc:
+                best_auc = AUC
+                logger.info(f'AUC: {best_auc:.5f}')
+                formatted_number = "{:.5f}".format(best_auc)
+                best_auc = float(formatted_number)
+                AUC_list.append(best_auc)
+
+                print(f"Epoch [{epoch+1}], Learning Rate: {scheduler.get_last_lr()}")
+
+            if epoch % 10 == 0:
+                #MAE_list.append(best_MAE)
+                print("-------------------------------------------------------")
+                print("epoch:",epoch)
+                print('best_MAE:', best_auc)
+            
+            if epoch == NUM_EPOCHS-1:
+                print(f"the best result up to {i+1}-loop is {best_auc:.4f}.")
+                formatted_number = "{:.5f}".format(best_auc)
+                All_AUC.append(best_auc)
+
+
     torch.save(model.state_dict(), 'model.pth')
     
