@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Jan 20 15:08:37 2024
-
+Author: LongLee
 """
 
 import torch.nn as nn
